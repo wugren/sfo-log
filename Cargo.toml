@@ -1,0 +1,8 @@
+[package]
+name = "sfo-log"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/wugren/sfo-log.git"
+
+[dependencies]
+flexi_logger = "0.29.6"
