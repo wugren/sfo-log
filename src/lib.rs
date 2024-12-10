@@ -41,24 +41,29 @@ impl Logger {
         }
     }
 
-    pub fn set_log_level(&mut self, level: &str) {
+    pub fn set_log_level(&mut self, level: &str) -> &mut Self {
         self.log_level = level.to_string();
+        self
     }
 
-    pub fn set_log_to_file(&mut self, to_file: bool) {
+    pub fn set_log_to_file(&mut self, to_file: bool) -> &mut Self {
         self.log_to_file = to_file;
+        self
     }
 
-    pub fn set_log_path(&mut self, path: &str) {
+    pub fn set_log_path(&mut self, path: &str) -> &mut Self {
         self.log_path = PathBuf::from(path);
+        self
     }
 
-    pub fn set_log_file_size(&mut self, size: u64) {
+    pub fn set_log_file_size(&mut self, size: u64) -> &mut Self {
         self.log_file_size = size;
+        self
     }
 
-    pub fn set_log_file_count(&mut self, count: usize) {
+    pub fn set_log_file_count(&mut self, count: usize) -> &mut Self {
         self.log_file_count = count;
+        self
     }
 
     pub fn start(&self) -> Result<(), FlexiLoggerError> {
