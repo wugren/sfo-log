@@ -18,7 +18,7 @@ fn custom_format(writer: &mut dyn std::io::Write, now: &mut DeferredNow, record:
         record.level(),
         file,
         record.line().unwrap_or(0),
-        thread::current().name().unwrap_or("<unnamed>"),
+        thread::current().name().unwrap_or(format!("{:?}", thread::current().id()).as_str()),
         &record.args()
     )
 }
