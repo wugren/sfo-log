@@ -29,6 +29,7 @@ pub struct Logger {
     log_path: PathBuf,
     log_file_size: u64,
     log_file_count: usize,
+    instance_id: String,
 }
 
 impl Logger {
@@ -40,7 +41,18 @@ impl Logger {
             log_path: std::env::current_dir().unwrap().join("logs"),
             log_file_size: 10 * 1024 * 1024,
             log_file_count: 7,
+            instance_id: "".to_string(),
         }
+    }
+
+    pub fn set_instance_id(&mut self, instance_id: &str) -> &mut Self {
+        self.instance_id = instance_id.to_string();
+        self
+    }
+
+    pub fn set_process_id_to_instance_id(&mut self) -> &mut Self {
+        self.instance_id = format!("{}", std::process::id());
+        self
     }
 
     pub fn set_log_level(&mut self, level: &str) -> &mut Self {
@@ -71,7 +83,11 @@ impl Logger {
     pub fn start(&self) -> Result<(), FlexiLoggerError> {
         let mut logger = flexi_logger::Logger::try_with_str(self.log_level.as_str())?;
         if self.log_to_file {
-            logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()).basename(self.app_name.as_str()))
+            let mut base_name = self.app_name.clone();
+            if !self.instance_id.is_empty() {
+                base_name = format!("{}_{}", self.app_name, self.instance_id);
+            }
+            logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()).basename(base_name.as_str()))
                 .duplicate_to_stderr(Duplicate::All)
                 .rotate(Criterion::Size(self.log_file_size), // 文件大小达到 10MB 时轮转
                         Naming::Numbers, // 使用数字命名轮转文件
