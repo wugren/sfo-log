@@ -23,6 +23,7 @@ fn custom_format(writer: &mut dyn std::io::Write, now: &mut DeferredNow, record:
     )
 }
 pub struct Logger {
+    app_name: String,
     log_level: String,
     log_to_file: bool,
     log_path: PathBuf,
@@ -31,8 +32,9 @@ pub struct Logger {
 }
 
 impl Logger {
-    pub fn new() -> Self {
+    pub fn new(app_name: String) -> Self {
         Self {
+            app_name,
             log_level: "debug".to_string(),
             log_to_file: false,
             log_path: std::env::current_dir().unwrap().join("logs"),
@@ -69,7 +71,7 @@ impl Logger {
     pub fn start(&self) -> Result<(), FlexiLoggerError> {
         let mut logger = flexi_logger::Logger::try_with_str(self.log_level.as_str())?;
         if self.log_to_file {
-            logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()))
+            logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()).basename(self.app_name.as_str()))
                 .duplicate_to_stderr(Duplicate::All)
                 .rotate(Criterion::Size(self.log_file_size), // 文件大小达到 10MB 时轮转
                         Naming::Numbers, // 使用数字命名轮转文件
