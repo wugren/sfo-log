@@ -32,9 +32,9 @@ pub struct Logger {
 }
 
 impl Logger {
-    pub fn new(app_name: String) -> Self {
+    pub fn new(app_name: &str) -> Self {
         Self {
-            app_name,
+            app_name: app_name.to_string(),
             log_level: "debug".to_string(),
             log_to_file: false,
             log_path: std::env::current_dir().unwrap().join("logs"),
