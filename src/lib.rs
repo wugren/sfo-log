@@ -45,37 +45,37 @@ impl Logger {
         }
     }
 
-    pub fn set_instance_id(&mut self, instance_id: &str) -> &mut Self {
+    pub fn set_instance_id(mut self, instance_id: &str) -> Self {
         self.instance_id = instance_id.to_string();
         self
     }
 
-    pub fn set_process_id_to_instance_id(&mut self) -> &mut Self {
+    pub fn set_process_id_to_instance_id(mut self) -> Self {
         self.instance_id = format!("{}", std::process::id());
         self
     }
 
-    pub fn set_log_level(&mut self, level: &str) -> &mut Self {
+    pub fn set_log_level(mut self, level: &str) -> Self {
         self.log_level = level.to_string();
         self
     }
 
-    pub fn set_log_to_file(&mut self, to_file: bool) -> &mut Self {
+    pub fn set_log_to_file(mut self, to_file: bool) -> Self {
         self.log_to_file = to_file;
         self
     }
 
-    pub fn set_log_path(&mut self, path: &str) -> &mut Self {
+    pub fn set_log_path(mut self, path: &str) -> Self {
         self.log_path = PathBuf::from(path);
         self
     }
 
-    pub fn set_log_file_size(&mut self, size: u64) -> &mut Self {
+    pub fn set_log_file_size(mut self, size: u64) -> Self {
         self.log_file_size = size;
         self
     }
 
-    pub fn set_log_file_count(&mut self, count: usize) -> &mut Self {
+    pub fn set_log_file_count(mut self, count: usize) -> Self {
         self.log_file_count = count;
         self
     }

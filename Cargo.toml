@@ -2,7 +2,9 @@
 name = "sfo-log"
 version = "0.1.0"
 edition = "2021"
+license-file = "LICENSE"
 repository = "https://github.com/wugren/sfo-log.git"
+description = "Simplify the use of log libraries"
 
 [dependencies]
 flexi_logger = "0.29.6"
