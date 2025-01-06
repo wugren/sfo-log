@@ -30,6 +30,7 @@ pub struct Logger {
     log_file_size: u64,
     log_file_count: usize,
     instance_id: String,
+    output_console: bool,
 }
 
 impl Logger {
@@ -42,6 +43,7 @@ impl Logger {
             log_file_size: 10 * 1024 * 1024,
             log_file_count: 7,
             instance_id: "".to_string(),
+            output_console: true,
         }
     }
 
@@ -80,19 +82,28 @@ impl Logger {
         self
     }
 
+    pub fn set_output_to_console(mut self, output_console: bool) -> Self {
+        self.output_console = output_console;
+        self
+    }
+
     pub fn start(&self) -> Result<(), FlexiLoggerError> {
-        let mut logger = flexi_logger::Logger::try_with_str(self.log_level.as_str())?;
+        let mut logger = flexi_logger::Logger::try_with_env_or_str(self.log_level.as_str())?;
         if self.log_to_file {
             let mut base_name = self.app_name.clone();
             if !self.instance_id.is_empty() {
                 base_name = format!("{}_{}", self.app_name, self.instance_id);
             }
             logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()).basename(base_name.as_str()))
-                .duplicate_to_stderr(Duplicate::All)
                 .rotate(Criterion::Size(self.log_file_size), // 文件大小达到 10MB 时轮转
                         Naming::Numbers, // 使用数字命名轮转文件
                         Cleanup::KeepLogFiles(self.log_file_count), // 保留最近 7 个日志文件
                 );
+        }
+        if !self.output_console {
+            logger = logger.duplicate_to_stderr(Duplicate::None);
+        } else {
+            logger = logger.duplicate_to_stderr(Duplicate::All);
         }
         logger.format(custom_format)
             .start()?;
