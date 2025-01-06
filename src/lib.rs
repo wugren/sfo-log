@@ -37,11 +37,11 @@ impl Logger {
     pub fn new(app_name: &str) -> Self {
         Self {
             app_name: app_name.to_string(),
-            log_level: "debug".to_string(),
+            log_level: "info".to_string(),
             log_to_file: false,
             log_path: std::env::current_dir().unwrap().join("logs"),
             log_file_size: 10 * 1024 * 1024,
-            log_file_count: 7,
+            log_file_count: 10,
             instance_id: "".to_string(),
             output_console: true,
         }
