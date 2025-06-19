@@ -1,7 +1,604 @@
 use std::path::{Path, PathBuf};
 use std::thread;
+#[cfg(feature = "_log")]
 use flexi_logger::{Cleanup, Criterion, DeferredNow, Duplicate, FileSpec, FlexiLoggerError, Naming, Record};
 
+#[cfg(all(feature = "_log", not(feature = "nolog")))]
+pub use tracing::{info, warn, trace, debug, error};
+
+#[cfg(feature = "nolog")]
+#[macro_export]
+macro_rules! error {
+    // Name / target / parent.
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / target.
+    (name: $name:expr, target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target / parent.
+    (target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / parent.
+    (name: $name:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name.
+    (name: $name:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target.
+    (target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Parent.
+    (parent: $parent:expr, { $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    (parent: $parent:expr, $($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($arg:tt)+) => (
+    );
+
+    // ...
+    ({ $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    ($($k:ident).+ = $($field:tt)*) => (
+    );
+    (?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (%$($k:ident).+ = $($field:tt)*) => (
+    );
+    ($($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+, $($field:tt)*) => (
+    );
+    (%$($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+) => (
+    );
+    (%$($k:ident).+) => (
+    );
+    ($($k:ident).+) => (
+    );
+    ($($arg:tt)+) => (
+    );
+}
+
+#[cfg(feature = "nolog")]
+#[macro_export]
+macro_rules! debug {
+    // Name / target / parent.
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / target.
+    (name: $name:expr, target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target / parent.
+    (target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / parent.
+    (name: $name:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name.
+    (name: $name:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target.
+    (target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Parent.
+    (parent: $parent:expr, { $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    (parent: $parent:expr, $($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($arg:tt)+) => (
+    );
+
+    // ...
+    ({ $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    ($($k:ident).+ = $($field:tt)*) => (
+    );
+    (?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (%$($k:ident).+ = $($field:tt)*) => (
+    );
+    ($($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+, $($field:tt)*) => (
+    );
+    (%$($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+) => (
+    );
+    (%$($k:ident).+) => (
+    );
+    ($($k:ident).+) => (
+    );
+    ($($arg:tt)+) => (
+    );
+}
+
+#[cfg(feature = "nolog")]
+#[macro_export]
+macro_rules! trace {
+    // Name / target / parent.
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / target.
+    (name: $name:expr, target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target / parent.
+    (target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / parent.
+    (name: $name:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name.
+    (name: $name:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target.
+    (target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Parent.
+    (parent: $parent:expr, { $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    (parent: $parent:expr, $($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($arg:tt)+) => (
+    );
+
+    // ...
+    ({ $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    ($($k:ident).+ = $($field:tt)*) => (
+    );
+    (?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (%$($k:ident).+ = $($field:tt)*) => (
+    );
+    ($($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+, $($field:tt)*) => (
+    );
+    (%$($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+) => (
+    );
+    (%$($k:ident).+) => (
+    );
+    ($($k:ident).+) => (
+    );
+    ($($arg:tt)+) => (
+    );
+}
+
+#[cfg(feature = "nolog")]
+#[macro_export]
+macro_rules! info {
+    // Name / target / parent.
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / target.
+    (name: $name:expr, target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target / parent.
+    (target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / parent.
+    (name: $name:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name.
+    (name: $name:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target.
+    (target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Parent.
+    (parent: $parent:expr, { $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    (parent: $parent:expr, $($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($arg:tt)+) => (
+    );
+
+    // ...
+    ({ $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    ($($k:ident).+ = $($field:tt)*) => (
+    );
+    (?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (%$($k:ident).+ = $($field:tt)*) => (
+    );
+    ($($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+, $($field:tt)*) => (
+    );
+    (%$($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+) => (
+    );
+    (%$($k:ident).+) => (
+    );
+    ($($k:ident).+) => (
+    );
+    ($($arg:tt)+) => (
+    );
+}
+
+
+#[cfg(feature = "nolog")]
+#[macro_export]
+macro_rules! warn {
+    // Name / target / parent.
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / target.
+    (name: $name:expr, target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target / parent.
+    (target: $target:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name / parent.
+    (name: $name:expr, parent: $parent:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, parent: $parent:expr, $($arg:tt)+ ) => (
+    );
+
+    // Name.
+    (name: $name:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (name: $name:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (name: $name:expr, $($arg:tt)+ ) => (
+    );
+
+    // Target.
+    (target: $target:expr, { $($field:tt)* }, $($arg:tt)* ) => (
+    );
+    (target: $target:expr, $($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, ?$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, %$($k:ident).+ $($field:tt)* ) => (
+    );
+    (target: $target:expr, $($arg:tt)+ ) => (
+    );
+
+    // Parent.
+    (parent: $parent:expr, { $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    (parent: $parent:expr, $($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+ = $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, ?$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, %$($k:ident).+, $($field:tt)*) => (
+    );
+    (parent: $parent:expr, $($arg:tt)+) => (
+    );
+
+    // ...
+    ({ $($field:tt)+ }, $($arg:tt)+ ) => (
+    );
+    ($($k:ident).+ = $($field:tt)*) => (
+    );
+    (?$($k:ident).+ = $($field:tt)*) => (
+    );
+    (%$($k:ident).+ = $($field:tt)*) => (
+    );
+    ($($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+, $($field:tt)*) => (
+    );
+    (%$($k:ident).+, $($field:tt)*) => (
+    );
+    (?$($k:ident).+) => (
+    );
+    (%$($k:ident).+) => (
+    );
+    ($($k:ident).+) => (
+    );
+    ($($arg:tt)+) => (
+    );
+}
+
+
+#[cfg(feature = "_log")]
 fn custom_format(writer: &mut dyn std::io::Write, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
     let file = match record.file() {
         None => {
@@ -87,6 +684,7 @@ impl Logger {
         self
     }
 
+    #[cfg(not(feature = "nolog"))]
     pub fn start(&self) -> Result<(), FlexiLoggerError> {
         let mut logger = flexi_logger::Logger::try_with_env_or_str(self.log_level.as_str())?;
         if self.log_to_file {
@@ -107,6 +705,11 @@ impl Logger {
         }
         logger.format(custom_format)
             .start()?;
+        Ok(())
+    }
+
+    #[cfg(feature = "nolog")]
+    pub fn start(&self) -> Result<(), FlexiLoggerError> {
         Ok(())
     }
 }

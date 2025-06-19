@@ -1,10 +1,16 @@
 [package]
 name = "sfo-log"
-version = "0.1.3"
-edition = "2021"
+version = "0.1.4"
+edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/wugren/sfo-log.git"
 description = "Simplify the use of log libraries"
 
 [dependencies]
-flexi_logger = "0.29.6"
+flexi_logger = { version = "0.31", optional = true }
+tracing = {version = "0.1", optional = true, features = ["log-always"]}
+
+[features]
+default = ["_log"]
+_log = ["flexi_logger", "tracing"]
+nolog = []
