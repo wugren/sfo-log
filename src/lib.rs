@@ -773,7 +773,13 @@ impl SfoLogFilter {
 
 impl LogLineFilter for SfoLogFilter {
     fn write(&self, now: &mut DeferredNow, record: &Record, log_line_writer: &dyn LogLineWriter) -> std::io::Result<()> {
-        if self.filters.contains(record.target()) {
+        let module = if let Some((first, _)) = record.metadata().target().split_once("::") {
+            first
+        } else {
+            record.metadata().target()
+        };
+        
+        if self.filters.contains(module) {
             return Ok(());
         }
 
