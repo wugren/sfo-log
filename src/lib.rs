@@ -608,16 +608,20 @@ fn custom_format(writer: &mut dyn std::io::Write, now: &mut DeferredNow, record:
             "<unknown>".to_string()
         }
         Some(path) => {
-            // Path::new(path).file_name().map(|v| v.to_string_lossy().to_string()).unwrap_or("<unknown>".to_string())
-            path.to_string()
+            Path::new(path).file_name().map(|v| v.to_string_lossy().to_string()).unwrap_or("<unknown>".to_string())
         }
+    };
+    let module = if let Some((first, _)) = record.metadata().target().split_once("::") {
+        first
+    } else {
+        record.metadata().target()
     };
     write!(
         writer,
         "{} [{}] [{}:{}:{}] [{}] - {}",
         now.format("%Y-%m-%d %H:%M:%S"),
         record.level(),
-        record.metadata().target(),
+        module,
         file,
         record.line().unwrap_or(0),
         thread::current().name().unwrap_or(format!("{:?}", thread::current().id()).as_str()),
