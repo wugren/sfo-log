@@ -1,10 +1,13 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::thread;
 #[cfg(feature = "_log")]
 use flexi_logger::{Cleanup, Criterion, DeferredNow, Duplicate, FileSpec, FlexiLoggerError, Naming, Record};
-
+use flexi_logger::filter::{LogLineFilter, LogLineWriter};
 #[cfg(all(feature = "_log", not(feature = "nolog")))]
 pub use tracing::{info, warn, trace, debug, error};
+use tracing::log;
+use tracing::log::Metadata;
 
 #[cfg(feature = "nolog")]
 #[macro_export]
@@ -605,14 +608,16 @@ fn custom_format(writer: &mut dyn std::io::Write, now: &mut DeferredNow, record:
             "<unknown>".to_string()
         }
         Some(path) => {
-            Path::new(path).file_name().map(|v| v.to_string_lossy().to_string()).unwrap_or("<unknown>".to_string())
+            // Path::new(path).file_name().map(|v| v.to_string_lossy().to_string()).unwrap_or("<unknown>".to_string())
+            path.to_string()
         }
     };
     write!(
         writer,
-        "{} [{}] [{}:{}] [{}] - {}",
+        "{} [{}] [{}:{}:{}] [{}] - {}",
         now.format("%Y-%m-%d %H:%M:%S"),
         record.level(),
+        record.metadata().target(),
         file,
         record.line().unwrap_or(0),
         thread::current().name().unwrap_or(format!("{:?}", thread::current().id()).as_str()),
@@ -628,6 +633,8 @@ pub struct Logger {
     log_file_count: usize,
     instance_id: String,
     output_console: bool,
+    filter: Vec<String>,
+    module_logs: Vec<(String, String)>,
 }
 
 impl Logger {
@@ -641,6 +648,8 @@ impl Logger {
             log_file_count: 10,
             instance_id: "".to_string(),
             output_console: true,
+            filter: vec![],
+            module_logs: vec![],
         }
     }
 
@@ -684,13 +693,25 @@ impl Logger {
         self
     }
 
-    #[cfg(not(feature = "nolog"))]
-    pub fn start(&self) -> Result<(), FlexiLoggerError> {
+    pub fn add_module_log(mut self, module_key: &str, log_name: &str) -> Self {
+        self.module_logs.push((module_key.to_string(), log_name.to_string()));
+        self
+    }
+
+    pub fn add_filter(mut self, filter: &str) -> Self {
+        self.filter.push(filter.to_string());
+        self
+    }
+
+    fn new_log(&self, log_name: &str, filters: Vec<String>) -> Result<Box<dyn log::Log>, FlexiLoggerError> {
         let mut logger = flexi_logger::Logger::try_with_env_or_str(self.log_level.as_str())?;
         if self.log_to_file {
             let mut base_name = self.app_name.clone();
             if !self.instance_id.is_empty() {
                 base_name = format!("{}_{}", self.app_name, self.instance_id);
+            }
+            if !log_name.is_empty() {
+                base_name = format!("{}_{}", base_name, log_name);
             }
             logger = logger.log_to_file(FileSpec::default().directory(self.log_path.as_path()).basename(base_name.as_str()))
                 .rotate(Criterion::Size(self.log_file_size), // 文件大小达到 10MB 时轮转
@@ -703,13 +724,83 @@ impl Logger {
         } else {
             logger = logger.duplicate_to_stderr(Duplicate::All);
         }
-        logger.format(custom_format)
-            .start()?;
+
+        logger = logger.filter(Box::new(SfoLogFilter::new(filters)));
+
+        let (log, _) = logger.format(custom_format).build()?;
+        Ok(log)
+    }
+
+    #[cfg(not(feature = "nolog"))]
+    pub fn start(self) -> Result<(), FlexiLoggerError> {
+        let main_log = self.new_log("", self.filter.clone())?;
+        let mut module_logs = Vec::new();
+        for (match_key, log_name) in self.module_logs.iter() {
+            module_logs.push((match_key.clone(), self.new_log(log_name.as_str(), vec![])?));
+        }
+        
+        let sfo_log = SfoLogger {
+            main_logger: main_log,
+            module_loggers: module_logs,
+        };
+        
+        log::set_boxed_logger(Box::new(sfo_log))?;
+        
         Ok(())
     }
 
     #[cfg(feature = "nolog")]
-    pub fn start(&self) -> Result<(), FlexiLoggerError> {
+    pub fn start(self) -> Result<(), FlexiLoggerError> {
         Ok(())
+    }
+}
+
+struct SfoLogFilter {
+    filters: HashSet<String>,
+}
+
+impl SfoLogFilter {
+    fn new(filters: Vec<String>) -> Self {
+        Self {
+            filters: filters.into_iter().map(|filter| filter.to_string()).collect(),
+        }
+    }
+}
+
+impl LogLineFilter for SfoLogFilter {
+    fn write(&self, now: &mut DeferredNow, record: &Record, log_line_writer: &dyn LogLineWriter) -> std::io::Result<()> {
+        if self.filters.contains(record.target()) {
+            return Ok(());
+        }
+
+        log_line_writer.write(now, record)
+    }
+}
+
+struct SfoLogger {
+    main_logger: Box<dyn log::Log>,
+    module_loggers: Vec<(String, Box<dyn log::Log>)>,
+}
+
+impl log::Log for SfoLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        self.main_logger.enabled(metadata)
+    }
+
+    fn log(&self, record: &Record) {
+        for (module, log) in self.module_loggers.iter() {
+            if record.metadata().target().starts_with(module) {
+                log.log(record);
+                break;
+            }
+        }
+        self.main_logger.log(record);
+    }
+
+    fn flush(&self) {
+        self.main_logger.flush();
+        for (_, module_logger) in self.module_loggers.iter() {
+            module_logger.flush();
+        }
     }
 }
